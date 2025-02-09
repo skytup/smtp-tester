@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced SMTP Tester - Skytup</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- TinyMCE WYSIWYG Editor -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --secondary-color: #1e293b;
+            --success-color: #059669;
+            --error-color: #dc2626;
+            --background: #f8fafc;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --modal-backdrop: rgba(0, 0, 0, 0.5);
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        /* Previous styles remain the same */
+        /* ... */
+
+        /* New styles for enhanced features */
+        .navbar {
+            background: var(--card-bg);
+            padding: 1rem;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-brand {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .navbar-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--modal-backdrop);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            padding: 2rem;
+            width: 90%;
+            max-width: 600px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: var(--shadow-lg);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            padding: 0.5rem;
+            width: auto;
+        }
+
+        .tag-input-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            min-height: 42px;
+        }
+
+        .email-tag {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .email-tag button {
+            background: none;
+            border: none;
+            color: white;
+            padding: 0;
+            width: auto;
+            font-size: 1rem;
+        }
+
+        .connection-info {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .settings-btn {
+            background: none;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            width: auto;
+        }
+
+        .settings-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .clear-data-btn {
+            background: var(--error-color);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            width: auto;
+        }
+
+        .clear-data-btn:hover {
+            background: #b91c1c;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -60%);
+            }
+
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        /* TinyMCE customization */
+        .tox-tinymce {
+            border-radius: 0.5rem !important;
+            border-color: var(--border-color) !important;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">SMTP Tester</div>
+        <div class="navbar-actions">
+            <div id="connectionStatus"></div>
+            <button id="settingsBtn" class="settings-btn" style="display: none;">
+                <i class="fas fa-cog"></i> SMTP Settings
+            </button>
+            <button id="clearDataBtn" class="clear-data-btn" style="display: none;">
+                <i class="fas fa-trash"></i> Clear Saved Data
+            </button>
+        </div>
+    </nav>
+
+    <div id="smtpModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>SMTP Configuration</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div id="alert" style="display: none;"></div>
+            <form id="smtpForm">
+                <div class="form-section">
+                    <h2 class="form-section-title">
+                        <i class="fas fa-server"></i>
+                        SMTP Configuration
+                    </h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="host">SMTP Host</label>
+                            <div class="input-group">
+                                <i class="fas fa-globe"></i>
+                                <input type="text" id="host" required placeholder="e.g., smtp.gmail.com">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="port">Port</label>
+                            <div class="input-group">
+                                <i class="fas fa-network-wired"></i>
+                                <input type="number" id="port" required placeholder="e.g., 587" value="587">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <div class="input-group">
+                                <i class="fas fa-user"></i>
+                                <input type="text" id="username" required placeholder="Email address">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <div class="input-group">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" id="password" required
+                                    placeholder="SMTP password or app password">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="connectBtn">
+                        <span class="btn-text"><i class="fas fa-plug"></i> Test Connection</span>
+                        <i class="fas fa-spinner loading"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div id="alert" style="display: none;"></div>
+
+            <div id="connectionInfo" class="connection-info" style="display: none;">
+                <div>
+                    <strong>Connected to:</strong> <span id="currentServer"></span>
+                    <br>
+                    <small>Using account: <span id="currentUser"></span></small>
+                </div>
+            </div>
+
+            <form id="emailForm" style="display: none;">
+                <div class="form-section">
+                    <h2 class="form-section-title">
+                        <i class="fas fa-envelope"></i>
+                        Send Email
+                    </h2>
+
+                    <div class="form-group">
+                        <label for="to">Recipients</label>
+                        <div class="tag-input-container">
+                            <div id="emailTags"></div>
+                            <input type="text" id="to" placeholder="Enter email addresses or paste array">
+                        </div>
+                        <small class="help-text">Enter multiple emails separated by commas or paste an array</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="subject">Subject</label>
+                        <div class="input-group">
+                            <i class="fas fa-heading"></i>
+                            <input type="text" id="subject" required placeholder="Email subject">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="message">Message</label>
+                        <textarea id="message" required></textarea>
+                    </div>
+
+                    <button type="submit" id="sendBtn" disabled>
+                        <span class="btn-text"><i class="fas fa-paper-plane"></i> Send Email</span>
+                        <i class="fas fa-spinner loading"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2024 <a href="https://www.skytup.com" target="_blank">www.skytup.com</a></p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize TinyMCE
+            tinymce.init({
+                selector: '#message',
+                height: 400,
+                menubar: false,
+                plugins: [
+                    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                    'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                    'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount'
+                ],
+                toolbar: 'undo redo | blocks | ' +
+                    'bold italic forecolor | alignleft aligncenter ' +
+                    'alignright alignjustify | bullist numlist outdent indent | ' +
+                    'removeformat | help',
+                content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }'
+            });
+
+            // Email tags handling
+            const emailTags = new Set();
+            const emailTagsContainer = document.getElementById('emailTags');
+            const toInput = document.getElementById('to');
+
+            function isValidEmail(email) {
+                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+            }
+
+            function addEmailTag(email) {
+                if (!isValidEmail(email)) return;
+
+                emailTags.add(email);
+                renderEmailTags();
+                toInput.value = '';
+                validateForm();
+            }
+
+            function removeEmailTag(email) {
+                emailTags.delete(email);
+                renderEmailTags();
+                validateForm();
+            }
+
+            function renderEmailTags() {
+                emailTagsContainer.innerHTML = Array.from(emailTags)
+                    .map(email => `
+                        <span class="email-tag">
+                            ${email}
+                            <button type="button" onclick="removeEmailTag('${email}')">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </span>
+                    `).join('');
+            }
+
+            toInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    const emails = toInput.value.split(',').map(e => e.trim());
+                    emails.forEach(addEmailTag);
+                }
+            });
+
+            toInput.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const paste = e.clipboardData.getData('text');
+                try {
+                    // Try to parse as JSON array
+                    const emails = JSON.parse(paste);
+                    if (Array.isArray(emails)) {
+                        emails.forEach(addEmailTag);
+                        return;
+                    }
+                } catch (err) {
+                    // Not JSON, treat as comma-separated
+                    const emails = paste.split(',').map(e => e.trim());
+                    emails.forEach(addEmailTag);
+                }
+            });
+
+            // Modal handling
+            const modal = document.getElementById('smtpModal');
+            const settingsBtn = document.getElementById('settingsBtn');
+            const closeBtn = document.querySelector('.modal-close');
+            const clearDataBtn = document.getElementById('clearDataBtn');
+
+            settingsBtn.onclick = () => modal.style.display = 'block';
+            closeBtn.onclick = () => modal.style.display = 'none';
+            window.onclick = (e) => {
+                if (e.target === modal) modal.style.display = 'none';
+            }
+
+            clearDataBtn.onclick = () => {
+                if (confirm('Are you sure you want to clear saved SMTP settings?')) {
+                    localStorage.removeItem('smtpSettings');
+                    location.reload();
+                }
+            }
+
+
+            const smtpForm = document.getElementById('smtpForm');
+            const emailForm = document.getElementById('emailForm');
+            const connectBtn = document.getElementById('connectBtn');
+            const sendBtn = document.getElementById('sendBtn');
+            const alertDiv = document.getElementById('alert');
+
+            // Load saved SMTP settings
+            const savedSettings = JSON.parse(localStorage.getItem('smtpSettings') || '{}');
+            if (savedSettings.host) {
+                document.getElementById('host').value = savedSettings.host;
+                document.getElementById('username').value = savedSettings.username;
+                document.getElementById('port').value = savedSettings.port;
+            }
+
+            // Form validation function
+            function validateEmailForm() {
+                const to = document.getElementById('to').value;
+                const subject = document.getElementById('subject').value;
+                const message = document.getElementById('message').value;
+                sendBtn.disabled = !(to && subject && message);
+            }
+
+            ['to', 'subject', 'message'].forEach(id => {
+                document.getElementById(id).addEventListener('input', validateEmailForm);
+            });
+
+            function showAlert(message, type) {
+                const icon = type === 'success' ? 'check-circle' : 'exclamation-circle';
+                alertDiv.className = `alert alert-${type}`;
+                alertDiv.innerHTML = `
+                    <i class="fas fa-${icon}"></i>
+                    <span>${message}</span>
+                `;
+                alertDiv.style.display = 'flex';
+                setTimeout(() => {
+                    alertDiv.style.display = 'none';
+                }, 5000);
+            }
+
+            function setLoading(button, isLoading) {
+                button.classList.toggle('loading', isLoading);
+                button.disabled = isLoading;
+            }
+
+            smtpForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                setLoading(connectBtn, true);
+
+                const formData = {
+                    host: document.getElementById('host').value,
+                    username: document.getElementById('username').value,
+                    password: document.getElementById('password').value,
+                    port: document.getElementById('port').value
+                };
+
+                try {
+                    const response = await fetch('backend.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            action: 'test_connection',
+                            ...formData
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        const settingsToSave = { ...formData };
+                        delete settingsToSave.password;
+                        localStorage.setItem('smtpSettings', JSON.stringify(settingsToSave));
+
+                        showAlert('SMTP connection successful!', 'success');
+                        emailForm.style.display = 'block';
+                    } else {
+                        showAlert(data.message || 'Connection failed!', 'error');
+                    }
+                } catch (error) {
+                    showAlert('An error occurred while testing the connection.', 'error');
+                } finally {
+                    setLoading(connectBtn, false);
+                }
+            });
+
+            emailForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                setLoading(sendBtn, true);
+
+                const emailData = {
+                    to: document.getElementById('to').value,
+                    subject: document.getElementById('subject').value,
+                    message: document.getElementById('message').value,
+                    ...JSON.parse(localStorage.getItem('smtpSettings')),
+                    password: document.getElementById('password').value
+                };
+
+                try {
+                    const response = await fetch('backend.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            action: 'send_email',
+                            ...emailData
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        showAlert('Email sent successfully!', 'success');
+                        emailForm.reset();
+                        sendBtn.disabled = true;
+                    } else {
+                        showAlert(data.message || 'Failed to send email!', 'error');
+                    }
+                } catch (error) {
+                    showAlert('An error occurred while sending the email.', 'error');
+                } finally {
+                    setLoading(sendBtn, false);
+                }
+            });
+
+            // Add input validation for real-time feedback
+            const inputs = document.querySelectorAll('input, textarea');
+            inputs.forEach(input => {
+                input.addEventListener('invalid', (e) => {
+                    e.preventDefault();
+                    input.classList.add('invalid');
+                });
+
+                input.addEventListener('input', () => {
+                    input.classList.remove('invalid');
+                });
+            });
+
+            // Add password visibility toggle
+            const passwordInput = document.getElementById('password');
+            const togglePassword = document.createElement('i');
+            togglePassword.className = 'fas fa-eye password-toggle';
+            togglePassword.style.cssText = `
+                position: absolute;
+                right: 1rem;
+                top: 50%;
+                transform: translateY(-50%);
+                cursor: pointer;
+                color: var(--text-secondary);
+            `;
+
+            passwordInput.parentElement.appendChild(togglePassword);
+
+            togglePassword.addEventListener('click', () => {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                togglePassword.className = `fas fa-eye${type === 'password' ? '' : '-slash'} password-toggle`;
+            });
+
+            // Add responsive design adjustments
+            function adjustLayoutForScreenSize() {
+                const card = document.querySelector('.card');
+                if (window.innerWidth <= 640) {
+                    card.style.padding = '1.5rem';
+                } else {
+                    card.style.padding = '2rem';
+                }
+            }
+
+            window.addEventListener('resize', adjustLayoutForScreenSize);
+            adjustLayoutForScreenSize();
+        });
+    </script>
+</body>
+
+</html>

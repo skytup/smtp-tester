@@ -1,13 +1,13 @@
 <?php
 header('Content-Type: application/json');
-include('config.php');
+
 // Enable error reporting for development
 ini_set('display_errors', 0);
 error_reporting(0);
 
 // Allow CORS for your domain only
 header("Access-Control-Allow-Origin: *");//https://www.skytup.com
-header("Access-Control-Allow-Methods: GET");
+header("Access-Control-Allow-Methods: POST");
 header("Access-Control-Allow-Headers: Content-Type");
 
 // If it's a preflight request, exit
@@ -15,8 +15,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
 }
 
-// Ensure request is GET
-if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+// Ensure request is POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['success' => false, 'message' => 'Method not allowed']);
     exit;
