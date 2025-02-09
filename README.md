@@ -17,7 +17,7 @@ A simple SMTP tester using PHPMailer to verify email sending functionality.
 ### Steps
 1. Clone the repository:
    ```sh
-   git clone https://github.com/yourusername/smtp-tester.git
+   git clone https://github.com/skytup/smtp-tester.git
    cd smtp-tester
    ```
 
