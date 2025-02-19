@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMTP Email Tester</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --background-color: #ecf0f1;
+            --text-color: #34495e;
+            --success-color: #2ecc71;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .navbar {
+            background-color: var(--secondary-color);
+            color: #fff;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .navbar-menu {
+            display: flex;
+            list-style: none;
+            gap: 1rem;
+        }
+
+        .navbar-menu a {
+            color: #fff;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .navbar-menu a:hover {
+            color: var(--primary-color);
+        }
+
+        .settings-configured {
+            text-shadow: 0 0 10px var(--success-color);
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 2rem;
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .email-form, .preview {
+            flex: 1;
+            min-width: 300px;
+            background-color: #fff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        textarea {
+            height: 200px;
+            resize: vertical;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: #fff;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+            margin-right: 0.5rem;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 10px auto;
+            padding: 2rem;
+            border-radius: 8px;
+            max-width: 500px;
+        }
+
+        .close {
+            float: right;
+            cursor: pointer;
+            font-size: 1.5rem;
+        }
+
+        #preview-content {
+            border: 1px solid #ddd;
+            padding: 1rem;
+            border-radius: 4px;
+            min-height: 200px;
+        }
+
+        .file-list {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.25rem;
+        }
+
+        .remove-file {
+            color: #e74c3c;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <i class="fas fa-envelope"></i> SMTP Email Tester
+        </div>
+        <ul class="navbar-menu">
+            <li><a href="#" id="settingsBtn"><i class="fas fa-cog"></i></a></li>
+            <li><a href="https://github.com/skytup/smtp-tester" target="_blank"><i class="fab fa-github"></i></a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="email-form">
+            <div class="form-group">
+                <label for="recipients"><i class="fas fa-users"></i> Recipients:</label>
+                <textarea id="recipients" placeholder="Enter email addresses separated by commas or upload a file" required></textarea>
+                <input type="file" id="recipientFile" accept=".txt,.json" style="margin-top: 0.5rem;">
+            </div>
+            <div class="form-group">
+                <label for="subject"><i class="fas fa-heading"></i> Subject:</label>
+                <input type="text" id="subject" required>
+            </div>
+            <div class="form-group">
+                <label for="template"><i class="fas fa-file-alt"></i> Select Template:</label>
+                <select id="template"></select>
+            </div>
+            <div class="form-group">
+                <label for="content"><i class="fas fa-pencil-alt"></i> Email Content:</label>
+                <textarea id="content" required></textarea>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-paperclip"></i> Attachments:</label>
+                <input type="file" id="attachments" multiple>
+                <div id="fileList" class="file-list"></div>
+            </div>
+            <button onclick="updatePreview()"><i class="fas fa-eye"></i> Update Preview</button>
+            <button onclick="sendEmail()"><i class="fas fa-paper-plane"></i> Send Email</button>
+        </div>
+        <div class="preview">
+            <h2><i class="fas fa-desktop"></i> Email Preview</h2>
+            <div id="preview-content"></div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>SMTP Settings</h2>
+            <div class="form-group">
+                <label for="smtpHost">SMTP Server:</label>
+                <input type="text" id="smtpHost" required>
+            </div>
+            <div class="form-group">
+                <label for="smtpUser">Username:</label>
+                <input type="text" id="smtpUser" required>
+            </div>
+            <div class="form-group">
+                <label for="smtpPass">Password:</label>
+                <input type="password" id="smtpPass" required>
+            </div>
+            <div class="form-group">
+                <label for="smtpPort">Port:</label>
+                <input type="number" id="smtpPort" value="587" required>
+            </div>
+            <button onclick="saveSettings()">Save Settings</button>
+            <button onclick="testConnection()">Test Connection</button>
+        </div>
+    </div>
+
+    <script>
+        // Load settings from localStorage
+        document.addEventListener('DOMContentLoaded', () => {
+            const settings = JSON.parse(localStorage.getItem('smtpSettings') || '{}');
+            if (settings.host) {
+                document.getElementById('smtpHost').value = settings.host;
+                document.getElementById('smtpUser').value = settings.username;
+                document.getElementById('smtpPass').value = settings.password;
+                document.getElementById('smtpPort').value = settings.port;
+                document.querySelector('.fa-cog').classList.add('settings-configured');
+            }
+            loadTemplates();
+        });
+
+        // Modal handling
+        const modal = document.getElementById('settingsModal');
+        const btn = document.getElementById('settingsBtn');
+        const span = document.getElementsByClassName('close')[0];
+
+        btn.onclick = () => modal.style.display = 'block';
+        span.onclick = () => modal.style.display = 'none';
+        window.onclick = (e) => {
+            if (e.target == modal) modal.style.display = 'none';
+        }
+
+        // File handling
+        const attachments = new Map();
+        document.getElementById('attachments').addEventListener('change', (e) => {
+            const files = e.target.files;
+            for (let file of files) {
+                attachments.set(file.name, file);
+            }
+            updateFileList();
+        });
+
+        function updateFileList() {
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+            attachments.forEach((file, name) => {
+                const div = document.createElement('div');
+                div.className = 'file-item';
+                div.innerHTML = `
+                    <span>${name}</span>
+                    <i class="fas fa-times remove-file" onclick="removeFile('${name}')"></i>
+                `;
+                fileList.appendChild(div);
+            });
+        }
+
+        function removeFile(name) {
+            attachments.delete(name);
+            updateFileList();
+        }
+
+        // Recipients file handling
+        document.getElementById('recipientFile').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    if (file.name.endsWith('.json')) {
+                        const emails = JSON.parse(event.target.result);
+                        document.getElementById('recipients').value = emails.join(',');
+                    } else {
+                        document.getElementById('recipients').value = event.target.result.trim();
+                    }
+                } catch (error) {
+                    alert('Error parsing file: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        function loadTemplates() {
+            fetch('tempo.php')
+                .then(response => response.json())
+                .then(templates => {
+                    const templateSelect = document.getElementById('template');
+                    templates.forEach(template => {
+                        const option = document.createElement('option');
+                        option.value = template.id;
+                        option.textContent = template.name;
+                        templateSelect.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error fetching templates:', error));
+        }
+
+        function updatePreview() {
+            const subject = document.getElementById('subject').value;
+            const content = document.getElementById('content').value;
+            const templateId = document.getElementById('template').value;
+
+            fetch(`tempo.php?id=${templateId}`)
+                .then(response => response.json())
+                .then(template => {
+                    const previewHtml = template.html
+                        .replace(/\{\{subject\}\}/g, subject)
+                        .replace(/\{\{content\}\}/g, content);
+                    document.getElementById('preview-content').innerHTML = previewHtml;
+                })
+                .catch(error => console.error('Error fetching template:', error));
+        }
+
+        function saveSettings() {
+            const settings = {
+                host: document.getElementById('smtpHost').value,
+                username: document.getElementById('smtpUser').value,
+                password: document.getElementById('smtpPass').value,
+                port: document.getElementById('smtpPort').value
+            };
+
+            localStorage.setItem('smtpSettings', JSON.stringify(settings));
+            document.querySelector('.fa-cog').classList.add('settings-configured');
+            modal.style.display = 'none';
+        }
+
+        function testConnection() {
+            const settings = {
+                action: 'test_connection',
+                host: document.getElementById('smtpHost').value,
+                username: document.getElementById('smtpUser').value,
+                password: document.getElementById('smtpPass').value,
+                port: document.getElementById('smtpPort').value
+            };
+
+            fetch('send.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(settings)
+            })
+            .then(response => response.json())
+            .then(result => {
+                alert(result.message);
+            })
+            .catch(error => {
+                console.error('Error testing connection:', error);
+                alert('Error testing connection');
+            });
+        }
+
+        function sendEmail() {
+            const settings = JSON.parse(localStorage.getItem('smtpSettings') || '{}');
+            if (!settings.host) {
+                alert('Please configure SMTP settings first');
+                return;
+            }
+
+            const recipients = document.getElementById('recipients').value.split(',').map(email => email.trim());
+            const subject = document.getElementById('subject').value;
+            const content = document.getElementById('content').value;
+            const templateId = document.getElementById('template').value;
+
+            if (!recipients.length || !subject || !content) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('action', 'send_email');
+            formData.append('host', settings.host);
+            formData.append('username', settings.username);
+            formData.append('password', settings.password);
+            formData.append('port', settings.port);
+            formData.append('recipients', JSON.stringify(recipients));
+            formData.append('subject', subject);
+            formData.append('content', content);
+            formData.append('template_id', templateId);
+
+            attachments.forEach((file, name) => {
+                formData.append('attachments[]', file);
+            });
+
+            fetch('send.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('Email sent successfully!');
+                } else {
+                    alert('Failed to send email: ' + result.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error sending email:', error);
+                alert('An error occurred while sending the email');
+            });
+        }
+    </script>
+</body>
+</html>
